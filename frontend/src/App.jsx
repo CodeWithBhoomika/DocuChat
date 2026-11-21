@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState } from "react";
 import {
   askQuestion,
@@ -32,7 +33,7 @@ export default function App() {
   useEffect(() => {
     listDocuments(sessionId)
       .then((d) => setDocs(d.documents))
-      .catch(() => {});
+      .catch((err) => console.error("Document loading error:", err));
   }, []);
 
   useEffect(() => {
@@ -54,9 +55,10 @@ export default function App() {
 
     try {
       await uploadFiles(sessionId, files);
-      setDocs((await listDocuments(sessionId)).documents);
-    } catch (e) {
-      setNotice(e.message);
+      const result = await listDocuments(sessionId);
+      setDocs(result.documents);
+    } catch (err) {
+      setNotice(err.message);
     } finally {
       setUploading(false);
     }
@@ -70,21 +72,35 @@ export default function App() {
     if (q.length < 2 || busy) return;
 
     setQuestion("");
-    setMessages((m) => [...m, { role: "user", text: q }]);
+
+    setMessages((m) => [
+      ...m,
+      { role: "user", text: q }
+    ]);
+
     setBusy(true);
 
     try {
-      await askQuestion(sessionId, q);
+      const res = await askQuestion(sessionId, q);
 
-      // TEMPORARY TEST: Check whether React can display a bot message.
+      console.log("AI RESPONSE:", res);
+      console.log("ANSWER TYPE:", typeof res.answer);
+
+      const answer = String(
+        res.answer ?? "No answer received from AI."
+      );
+
       setMessages((m) => [
         ...m,
         {
           role: "bot",
-          text: "TEST ANSWER RECEIVED"
+          text: answer
         }
       ]);
+
     } catch (err) {
+      console.error("AI request error:", err);
+
       setMessages((m) => [
         ...m,
         {
@@ -93,6 +109,7 @@ export default function App() {
           error: true
         }
       ]);
+
     } finally {
       setBusy(false);
     }
@@ -151,7 +168,9 @@ export default function App() {
             {uploading ? "Reading your PDF…" : "Add PDFs"}
           </strong>
 
-          <span>Drop files here or click to browse. Up to 10 MB each.</span>
+          <span>
+            Drop files here or click to browse. Up to 10 MB each.
+          </span>
         </div>
 
         {notice && <p className="error">{notice}</p>}
@@ -248,3 +267,4 @@ export default function App() {
     </div>
   );
 }
+
