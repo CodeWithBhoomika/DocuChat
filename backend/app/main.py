@@ -1,3 +1,5 @@
+import logging
+logger= logging.getLogger(__name__)
 import re
 import time
 from collections import defaultdict, deque
@@ -93,18 +95,48 @@ async def upload(session_id: str = Form(...), files: list[UploadFile] = File(...
     return {"added": added}
 
 
+
 @app.post("/api/ask")
 async def ask(body: AskRequest):
-    valid_session(body.session_id)
-    hits = llm.filter_hits(await run_in_threadpool(
-        get_store().query, body.session_id, body.question, settings.TOP_K))
     try:
-        text = await run_in_threadpool(llm.answer, body.question, hits)
+        valid_session(body.session_id)
+
+        hits = await run_in_threadpool(
+            get_store().query,
+            body.session_id,
+            body.question,
+            settings.TOP_K
+        )
+
+        hits = llm.filter_hits(hits)
+
+        text = await run_in_threadpool(
+            llm.answer,
+            body.question,
+            hits
+        )
+
+        sources = [
+            {
+                "id": i,
+                "file": h["file"],
+                "page": h["page"],
+                "snippet": h["text"][:300]
+            }
+            for i, h in enumerate(hits, start=1)
+        ]
+
+        return {"answer": text, "sources": sources}
+
+    except HTTPException:
+        raise
+
     except Exception:
-        raise HTTPException(502, "The AI service is unavailable. Please try again.")
-    sources = [{"id": i, "file": h["file"], "page": h["page"], "snippet": h["text"][:300]}
-               for i, h in enumerate(hits, start=1)]
-    return {"answer": text, "sources": sources}
+        logger.exception("DocuChat /api/ask failed")
+        raise HTTPException(
+            status_code=502,
+            detail="The AI service is unavailable. Please try again."
+        )
 
 
 @app.get("/api/documents")
