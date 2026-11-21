@@ -23,25 +23,9 @@ function AnswerText({ text, onCite }) {
 }
 
 function Message({ msg }) {
-  const [active, setActive] = useState(null);
-  if (msg.role === "user") return <div className="bubble user">{msg.text}</div>;
   return (
     <div className="bubble bot">
-      {msg.error ? <p className="error">{msg.text}</p> : <AnswerText text={msg.text} onCite={setActive} />}
-      {msg.sources?.length > 0 && (
-        <ul className="sources">
-          {msg.sources.map((s) => (
-            <li key={s.id} className={active === s.id ? "source open" : "source"}>
-              <button onClick={() => setActive(active === s.id ? null : s.id)}>
-                <span className="chip static">{s.id}</span>
-                <span>{s.file}</span>
-                <span className="page">page {s.page}</span>
-              </button>
-              {active === s.id && <blockquote><mark>{s.snippet}</mark></blockquote>}
-            </li>
-          ))}
-        </ul>
-      )}
+      <p>{String(msg.text ?? "No answer received")}</p>
     </div>
   );
 }
