@@ -2,8 +2,6 @@
 
 Upload PDFs and ask questions. Answers come only from your documents and cite the **file and page** they were taken from.
 
-**Live demo:** [add your Vercel link] · **API:** [add your Render link]
-
 ## How it works (RAG pipeline)
 1. **Upload** – PDF text is extracted page by page (`pypdf`).
 2. **Chunk** – each page is split into ~800-character overlapping chunks that keep file name + page number.
